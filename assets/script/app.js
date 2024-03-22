@@ -1,42 +1,92 @@
-class Shape {
-    constructor(name, color) {
-        this._name = name;
-        this._color = color;
-    }
+'use strict';
 
-    get name() {
-        return this._name;
-    }
+import { onEvent, select, selectAll, create, print } from "./utils.js";
 
-    get color() {
-        return this._color;
-    }
+import author, { Shape } from "./shape.js";
 
-    getInfo() {
-        return `Name: ${this._name}, Color: ${this._color}`;
+const buttonCreate = select('.create');
+const optionShape = select('.shape');
+const optionColor = select('.color');
+const containerGrid = select('.grid-container');
+const infoFactory = select('.factory-info');
+const MAX_STORAGE = 24;
+let shapeArray = [];
+let shapeCount = 0;
+
+function getOptionText(element) {
+    if (element.selectedIndex !== -1) {
+        return element.options[element.selectedIndex].text;
     }
 }
 
-let shapeArray = [];
+function generateShapeObject() {
+    let colorText = getOptionText(optionColor);
+    let newShape = new Shape(optionShape.value, colorText);
+    shapeArray.push(newShape);
+}
 
-function createShape() {
-    const shapeSelect = document.getElementById("shape-select");
-    const colorSelect = document.getElementById("color-select");
+function generateShape() {
+    shapeCount++;
 
-    const selectedShape = shapeSelect.options[shapeSelect.selectedIndex].value;
-    const selectedColor = colorSelect.options[colorSelect.selectedIndex].value;
+    let newShape = create('div');
+    if (optionShape.value == "circle") {
+        newShape.classList.add('circle');
+    }
+    newShape.style.backgroundColor = `#${optionColor.value}`;
+    newShape.classList.add(`item-${shapeCount}`);
+    containerGrid.appendChild(newShape);
+}
 
-    const shape = new Shape(selectedShape, selectedColor);
-    shapeArray.push(shape);
+function areOptionsValid() {
+    if (optionShape.value !== "" && optionColor.value !== "") {
+        return true;
+    } else {
+        infoFactory.innerText = `Please, select a shape and a color`;
+        return false;
+    }
+}
 
-    const shapeContainer = document.getElementById("shape-container");
-    const newShape = document.createElement("div");
-    newShape.classList.add("shape");
-    newShape.style.backgroundColor = selectedColor;
+onEvent('click', buttonCreate, () => {
+    clearOnClick();
+    if (shapeArray.length < MAX_STORAGE && areOptionsValid()) {
+        generateShapeObject();
+        generateShape();
+    } else if (shapeArray.length === MAX_STORAGE) {
+        clearAll();
+        infoFactory.innerText = `Storage is full!`;
+    }
+});
 
-    newShape.onclick = function() {
-        alert(shape.getInfo());
-    };
+function getShapeUnit(element) {
+    let className = element[element.length - 1];
+    let classArray = className.split('-');
+    let unit = classArray[classArray.length - 1];
+    return unit;
+}
 
-    shapeContainer.appendChild(newShape);
+function displayInfo(unit, info) {
+    infoFactory.innerText = `Unit ${unit}: ${info}`;
+}
+
+onEvent('click', window, (event) => {
+    if (containerGrid.hasChildNodes()) {
+        containerGrid.childNodes.forEach(node => {
+            if (node.contains(event.target)) {
+                let unit = getShapeUnit(node.classList);
+                let info = shapeArray[unit - 1].getInfo();
+                displayInfo(unit, info);
+            }
+        });
+    }
+});
+
+function clearAll() {
+    buttonCreate.classList.add('clear');
+    buttonCreate.value = 'Clear';
+}
+
+function clearOnClick() {
+    if (buttonCreate.value == 'Clear') {
+        location.reload();
+    }
 }
